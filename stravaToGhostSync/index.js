@@ -146,7 +146,7 @@ async function updateGhostPost(post, activityDetails) {
         id: post.id,
         title: activityDetails.title,
         html: htmlContent,
-        tags: ['Strava', `#${activityDetails.type}`],
+        tags: [`${activityDetails.type}`, 'Strava'],
         updated_at: post.updated_at,
       },
       { source: 'html' }
@@ -174,7 +174,7 @@ async function createGhostPost(activityDetails) {
       {
         title: activityDetails.title,
         html: htmlContent,
-        tags: ['Strava', `#${activityDetails.type}`],
+        tags: [`${activityDetails.type}`, 'Strava'],
         status: 'published',
       },
       { source: 'html' }
