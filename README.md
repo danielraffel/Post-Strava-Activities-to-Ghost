@@ -119,6 +119,11 @@ Replace `YOUR_CLIENT_ID` and `YOUR_CLIENT_SECRET` with your actual Strava applic
 
 Set up a Google Cloud Scheduler job with frequency `0 */5 * * *` set to target type `HTTP` and HTTP method `GET` to trigger the URL for `stravaTokenRefresh/index.js`. This will run every 5 hours and will keep your Strava access token refreshed and valid. It will update the values stored in Google Cloud Secret Manager.
 
+### Notes
+
+- I am not 100% certain but it's likely that Strava profiles and activities need to be set to public (eg everyone can see) for the `stravaToGhostSync` function to work.
+- If you delete or update a post on Strava the `stravaToGhostSync` function should apply those changes on your Ghost blog (assuming it's one of the 10 most recent posts.) I noticed that embeds are either slow to show title changes or do not reflect changes. However, your blog post will update!
+
 ### Conclusion
 
 This README outlines the steps needed to set up the Post Strava to Ghost project, including configuring Google Cloud services, setting up a Strava app, handling OAuth tokens, and deploying Google Cloud Functions. Follow these instructions to ensure smooth operation and automatic synchronization of your Strava activities to your Ghost blog. 
