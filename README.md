@@ -117,7 +117,7 @@ Replace `YOUR_CLIENT_ID` and `YOUR_CLIENT_SECRET` with your actual Strava applic
 
 ### Google Cloud Scheduler
 
-Set up a Google Cloud Scheduler job with frequency `0 */5 * * *` set to target type `HTTP` and HTTP method `GET` to trigger the URL for `stravaTokenRefresh/index.js`. This will run every 5 hours and will keep your Strava access token refreshed and valid. It will update your secret manager.
+Set up a Google Cloud Scheduler job with frequency `0 */5 * * *` set to target type `HTTP` and HTTP method `GET` to trigger the URL for `stravaTokenRefresh/index.js`. This will run every 5 hours and will keep your Strava access token refreshed and valid. It will update the values stored in Google Cloud Secret Manager.
 
 ### Conclusion
 
