@@ -123,7 +123,7 @@ Set up a Google Cloud Scheduler job with frequency `0 */5 * * *` set to target t
 
 - I am not 100% certain but it's likely that Strava profiles and activities need to be set to public (eg everyone can see) for the `stravaToGhostSync` function to work.
 - If you delete or update a post on Strava the `stravaToGhostSync` function should apply those changes on your Ghost blog (assuming it's one of the 10 most recent posts.) I noticed that embeds are either slow to show title changes or do not reflect changes. However, your blog post will update!
-- Posts will be tagged with the activity type (eg Ride, Run, etc) followed by a tag for Strava. This can be changed in the create and update functions: `tags: [`${activityDetails.type}`, 'Strava'],`
+- Posts will be tagged with the activity type (eg Ride, Run, etc) followed by a tag for Strava. This can be changed in the create and update functions: ```tags: [`${activityDetails.type}`, 'Strava'],```
 
 ### Conclusion
 
