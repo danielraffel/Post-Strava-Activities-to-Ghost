@@ -1,7 +1,7 @@
 
 ### Post Strava Activities to Ghost
 
-The Post Strava Activities to Ghost project enables automated synchronization of Strava activity data with a Ghost blog platform. By leveraging Google Cloud Functions, the Strava API, and the Ghost Admin API, the project can automatically post activities from Strava onto a Ghost blog.
+The Post Strava Activities to Ghost project enables automated synchronization of Strava activity data with a Ghost blog platform. By leveraging Google Cloud Functions, the Strava API, and the Ghost Admin API, the project can automatically post activities from Strava onto a Ghost blog using a Strave embed for your latest activity.
 
 ## Pre-requisites
 
