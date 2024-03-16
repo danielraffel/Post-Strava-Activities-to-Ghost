@@ -148,6 +148,7 @@ async function updateGhostPost(post, activityDetails) {
         html: htmlContent,
         tags: [`${activityDetails.type}`, 'Strava'],
         updated_at: post.updated_at,
+        canonical_url: `https://www.strava.com/activities/${activityDetails.embedId}`,
       },
       { source: 'html' }
     );
@@ -176,6 +177,7 @@ async function createGhostPost(activityDetails) {
         html: htmlContent,
         tags: [`${activityDetails.type}`, 'Strava'],
         status: 'published',
+        canonical_url: `https://www.strava.com/activities/${activityDetails.embedId}`,
       },
       { source: 'html' }
     );
