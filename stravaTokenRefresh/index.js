@@ -1,3 +1,5 @@
+will this handle deleting all but the enabled and latest secrets?
+
 const express = require('express');
 const fetch = require('node-fetch');
 const { SecretManagerServiceClient } = require('@google-cloud/secret-manager');
@@ -32,12 +34,17 @@ async function deleteOldSecretVersions(secretName) {
   const parent = `projects/${projectId}/secrets/${secretName}`;
 
   const [versions] = await secretManagerClient.listSecretVersions({ parent });
+  const activeVersions = versions.filter(version => version.state === 'ENABLED');
 
-  const oldVersions = versions.filter(version => version.state === 'ENABLED' && version.name !== `${parent}/versions/latest`);
+  // Find the latest active version by sorting ENABLED versions by their createTime in descending order
+  const latestActiveVersion = activeVersions.sort((a, b) => new Date(b.createTime) - new Date(a.createTime))[0];
 
-  for (const version of oldVersions) {
-    await secretManagerClient.destroySecretVersion({ name: version.name });
-    console.log(`Deleted older version ${version.name} of secret ${secretName}`);
+  for (const version of versions) {
+    // Check if the version is not the latest active version before deleting
+    if (version.name !== latestActiveVersion.name) {
+      await secretManagerClient.destroySecretVersion({ name: version.name });
+      console.log(`Deleted older version ${version.name} of secret ${secretName}`);
+    }
   }
 }
 
