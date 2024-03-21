@@ -95,10 +95,12 @@ app.post('/', async (req, res) => {
   }
 });
 
-async function fetchActivityDetails(activityId) {
+async function fetchActivityDetails(activityId, attempt = 0) {
+  const maxAttempts = 5; // Maximum number of attempts
+  const backoffDelay = 1000; // Initial delay in milliseconds
   const accessToken = await accessSecret('strava_access_token');
   const url = `https://www.strava.com/api/v3/activities/${activityId}?access_token=${accessToken}`;
-  
+
   try {
     const response = await fetch(url);
     const data = await response.json();
@@ -115,7 +117,16 @@ async function fetchActivityDetails(activityId) {
     };
   } catch (error) {
     console.error(`Error fetching activity details for ID: ${activityId}`, error);
-    return null;
+
+    if (attempt < maxAttempts) {
+      console.log(`Retrying... Attempt ${attempt + 1} of ${maxAttempts}`);
+      // Wait for a delay that increases with each attempt
+      await new Promise(resolve => setTimeout(resolve, backoffDelay * Math.pow(2, attempt)));
+      return fetchActivityDetails(activityId, attempt + 1); // Recursively retry
+    } else {
+      console.error('Maximum retry attempts reached, failing...');
+      return null;
+    }
   }
 }
 
