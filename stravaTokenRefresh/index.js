@@ -5,6 +5,7 @@ const { SecretManagerServiceClient } = require('@google-cloud/secret-manager');
 const app = express();
 const secretManagerClient = new SecretManagerServiceClient();
 
+// Google Secret Manager helper functions to access and update secrets
 async function accessSecret(secretName) {
   const projectId = process.env.GOOGLE_CLOUD_PROJECT;
   const [version] = await secretManagerClient.accessSecretVersion({
@@ -13,6 +14,7 @@ async function accessSecret(secretName) {
   return version.payload.data.toString();
 }
 
+// Update secret with new version
 async function updateSecret(secretName, secretValue) {
   const projectId = process.env.GOOGLE_CLOUD_PROJECT;
   const [version] = await secretManagerClient.addSecretVersion({
@@ -24,6 +26,22 @@ async function updateSecret(secretName, secretValue) {
   console.log(`Updated secret ${secretName} with new version ${version.name}`);
 }
 
+// Delete old versions of secret after updating to avoid unnecessary costs
+async function deleteOldSecretVersions(secretName) {
+  const projectId = process.env.GOOGLE_CLOUD_PROJECT;
+  const parent = `projects/${projectId}/secrets/${secretName}`;
+
+  const [versions] = await secretManagerClient.listSecretVersions({ parent });
+
+  const oldVersions = versions.filter(version => version.state === 'ENABLED' && version.name !== `${parent}/versions/latest`);
+
+  for (const version of oldVersions) {
+    await secretManagerClient.destroySecretVersion({ name: version.name });
+    console.log(`Deleted older version ${version.name} of secret ${secretName}`);
+  }
+}
+
+// Refresh Strava access token using refresh token
 app.get('/', async (req, res) => {
   try {
     const clientId = await accessSecret('strava_client_id');
@@ -43,6 +61,9 @@ app.get('/', async (req, res) => {
 
     await updateSecret('strava_access_token', data.access_token);
     await updateSecret('strava_refresh_token', data.refresh_token);
+
+    await deleteOldSecretVersions('strava_access_token');
+    await deleteOldSecretVersions('strava_refresh_token');
 
     res.status(200).send('Strava access token refreshed successfully');
   } catch (error) {
