@@ -10,7 +10,7 @@ app.use(bodyParser.json());
 // Initialize the Secret Manager client
 const secretManagerClient = new SecretManagerServiceClient();
 
-// Function to access a secret from Google Cloud Secret Manager
+// Access secrets from Google Cloud Secret Manager
 async function accessSecret(secretName) {
   const projectId = process.env.GOOGLE_CLOUD_PROJECT;
   const [version] = await secretManagerClient.accessSecretVersion({
@@ -19,7 +19,7 @@ async function accessSecret(secretName) {
   return version.payload.data.toString();
 }
 
-// Configure the Ghost Admin API with your details
+// Configure the Ghost Admin API with your web and admin key details stored in secrets
 async function configureGhostApi() {
   const url = await accessSecret('ghost_url');
   const key = await accessSecret('ghost_key');
@@ -37,7 +37,7 @@ let ghostApi;
   ghostApi = await configureGhostApi();
 })();
 
-// Verification route for Strava webhook setup
+// Verify the Strava webhook setup
 app.get('/', async (req, res) => {
   const verifyToken = await accessSecret('strava_verify_token');
 
@@ -80,13 +80,14 @@ app.post('/', async (req, res) => {
       return res.status(404).send('Activity not found or is not accessible.');
     }
 
-    const existingPost = await findPostByActivityId(objectId);
+    // For create and update events, check if a post already exists and update or create accordingly
+    const existingPost = await findPostByActivityId(activityDetails.embedId);
     if (existingPost) {
       await updateGhostPost(existingPost, activityDetails);
-      console.log(`Updated post for activity ID: ${objectId}`);
+      console.log(`Updated post for activity ID: ${activityDetails.embedId}`);
     } else {
       await createGhostPost(activityDetails);
-      console.log(`Created new post for activity ID: ${objectId}`);
+      console.log(`Created new post for activity ID: ${activityDetails.embedId}`);
     }
     res.status(200).send('Post created or updated successfully.');
   } catch (error) {
@@ -95,41 +96,49 @@ app.post('/', async (req, res) => {
   }
 });
 
+// Fetch activity details from Strava API
 async function fetchActivityDetails(activityId, attempt = 0) {
   const maxAttempts = 5; // Maximum number of attempts
   const backoffDelay = 1000; // Initial delay in milliseconds
-  const accessToken = await accessSecret('strava_access_token');
-  const url = `https://www.strava.com/api/v3/activities/${activityId}?access_token=${accessToken}`;
+  let accessToken;
 
   try {
+    accessToken = await accessSecret('strava_access_token');
+    const url = `https://www.strava.com/api/v3/activities/${activityId}?access_token=${accessToken}`;
+    console.log(`Attempting to fetch details for Activity ID: ${activityId} with Access Token: ${accessToken}`);
+
     const response = await fetch(url);
     const data = await response.json();
 
+    console.log(`Response from Strava API for Activity ID: ${activityId}: ${JSON.stringify(data)}`);
+
     if (data.errors) {
-      console.error(`Strava API error for activity ID ${activityId}:`, data);
+      console.error(`Strava API error for activity ID ${activityId}:`, JSON.stringify(data.errors));
       return null;
     }
 
     return {
       title: data.name,
       type: data.type,
-      embedId: activityId,
+      embedId: data.id,
     };
   } catch (error) {
     console.error(`Error fetching activity details for ID: ${activityId}`, error);
 
+    // Retry the request if the maximum number of attempts have not been reached
     if (attempt < maxAttempts) {
       console.log(`Retrying... Attempt ${attempt + 1} of ${maxAttempts}`);
       // Wait for a delay that increases with each attempt
       await new Promise(resolve => setTimeout(resolve, backoffDelay * Math.pow(2, attempt)));
       return fetchActivityDetails(activityId, attempt + 1); // Recursively retry
     } else {
-      console.error('Maximum retry attempts reached, failing...');
+      console.error('Maximum retry attempts reached. Unable to fetch details for Activity ID:', activityId);
       return null;
     }
   }
 }
 
+// Search for a post in Ghost using the Strava activity ID to check if it already exists
 async function findPostByActivityId(activityId) {
   try {
     const posts = await ghostApi.posts.browse({ limit: 'all', filter: 'tags:[Strava]', formats: 'html' });
@@ -142,6 +151,7 @@ async function findPostByActivityId(activityId) {
   }
 }
 
+// If Strava sends an update event, update the corresponding post
 async function updateGhostPost(post, activityDetails) {
   const htmlContent = `
 <!--kg-card-begin: html-->
@@ -172,6 +182,7 @@ async function updateGhostPost(post, activityDetails) {
   }
 }
 
+// If Strava sends a new Activity ID, create a new post
 async function createGhostPost(activityDetails) {
   const htmlContent = `
 <!--kg-card-begin: html-->
@@ -201,6 +212,7 @@ async function createGhostPost(activityDetails) {
   }
 }
 
+// If Strava sends a delete event, delete the corresponding post
 async function deletePostByActivityId(activityId) {
   try {
     // Browse all posts tagged with 'Strava'
