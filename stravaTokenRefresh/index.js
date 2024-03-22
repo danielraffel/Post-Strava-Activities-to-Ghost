@@ -32,7 +32,6 @@ async function updateSecret(secretName, secretValue) {
 async function deleteOldSecretVersions(secretName) {
   const projectId = process.env.GOOGLE_CLOUD_PROJECT;
   const parent = `projects/${projectId}/secrets/${secretName}`;
-
   const [versions] = await secretManagerClient.listSecretVersions({ parent });
   const activeVersions = versions.filter(version => version.state === 'ENABLED');
 
@@ -40,8 +39,8 @@ async function deleteOldSecretVersions(secretName) {
   const latestActiveVersion = activeVersions.sort((a, b) => new Date(b.createTime) - new Date(a.createTime))[0];
 
   for (const version of versions) {
-    // Check if the version is not the latest active version before deleting
-    if (version.name !== latestActiveVersion.name) {
+    // Check if the version is not the latest active version and is not already in DESTROYED state before deleting
+    if (version.name !== latestActiveVersion.name && version.state !== 'DESTROYED') {
       await secretManagerClient.destroySecretVersion({ name: version.name });
       console.log(`Deleted older version ${version.name} of secret ${secretName}`);
     }
