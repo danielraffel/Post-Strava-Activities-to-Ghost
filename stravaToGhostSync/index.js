@@ -72,6 +72,13 @@ app.post('/', async (req, res) => {
 
     console.log(`Received ${aspectType} event for activity ID: ${objectId}`);
 
+    // For create events, add a short delay before fetching activity details
+    if (aspectType === 'create') {
+      const delaySeconds = 15;
+      console.log(`Waiting for ${delaySeconds} seconds before fetching activity details for new activity ID: ${objectId}`);
+      await new Promise(resolve => setTimeout(resolve, delaySeconds * 1000));
+    }
+
     // For create and update events, attempt to fetch activity details
     const activityDetails = await fetchActivityDetails(objectId);
 
@@ -111,6 +118,10 @@ async function fetchActivityDetails(activityId, attempt = 0) {
     const data = await response.json();
 
     console.log(`Response from Strava API for Activity ID: ${activityId}: ${JSON.stringify(data)}`);
+
+    // Log the access token and full API response
+    console.log(`Access Token used for Activity ID: ${activityId}: ${accessToken}`);
+    console.log(`Full API response for Activity ID: ${activityId}:`, data);
 
     if (data.errors) {
       console.error(`Strava API error for activity ID ${activityId}:`, JSON.stringify(data.errors));
